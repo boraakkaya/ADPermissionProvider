@@ -1,0 +1,12 @@
+{
+  "$schema": "https://dev.office.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "ad-permission-provider-client-side-solution",
+    "id": "ad6272ad-2a99-4264-80e7-285dc60d10de",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true
+  },
+  "paths": {
+    "zippedPackage": "solution/ad-permission-provider.sppkg"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "version": "1.4.0",
+    "libraryName": "ad-permission-provider",
+    "libraryId": "ad6272ad-2a99-4264-80e7-285dc60d10de",
+    "environment": "spo"
+  }
+}

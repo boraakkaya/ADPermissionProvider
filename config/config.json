@@ -1,0 +1,18 @@
+{
+  "$schema": "https://dev.office.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "ad-permission-provider-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/adPermissionProvider/AdPermissionProviderWebPart.js",
+          "manifest": "./src/webparts/adPermissionProvider/AdPermissionProviderWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "AdPermissionProviderWebPartStrings": "lib/webparts/adPermissionProvider/loc/{locale}.js"
+  }
+}
