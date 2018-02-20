@@ -1,0 +1,168 @@
+#r "Newtonsoft.Json"
+using System.Net; 
+using System.Net.Http; 
+using System.Net.Http.Headers; 
+using System.Text;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
+
+public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
+{
+log.Info("C# HTTP trigger function processed a request.");
+    string userAccountEmail = req.GetQueryNameValuePairs().FirstOrDefault(q => string.Compare(q.Key,"userAccountEmail",true)==0).Value; 
+    string propertyValue = req.GetQueryNameValuePairs().FirstOrDefault(q => string.Compare(q.Key,"propertyValue",true)==0).Value;    
+    log.Info("User  : " + userAccountEmail + " Value : " + propertyValue);    
+    var graphAuthenticationContext = new AuthenticationContext("https://login.microsoftonline.com/cd1ed347-7cfb-48c9-981a-8ca2f80ba40f/oauth2/authorize", false); 
+    ClientCredential clientCred = new ClientCredential("056a3ae6-3502-4c59-a624-e05e94a2ead7", "kbbL2f72SKpbo6kfBfO+y8VaxhKWBaIJ2Dia9U3YCWw=");
+    AuthenticationResult graphAuthenticationResult = await graphAuthenticationContext.AcquireTokenAsync("https://graph.microsoft.com",clientCred);
+    string graphToken = graphAuthenticationResult.AccessToken;
+    log.Info("Graph Token : " + graphToken);
+    var graphResponse = await postToGraph(graphToken,userAccountEmail,propertyValue,log);    
+    var graphResponseResult =  await graphResponse.Content.ReadAsStringAsync();
+    log.Info("Graph Response Result : "+graphResponseResult);
+    log.Info("Graph Response Status Code  : "+ graphResponse.StatusCode.ToString());
+
+    var userProfileAuthenticationContext = new AuthenticationContext("https://login.microsoftonline.com/cd1ed347-7cfb-48c9-981a-8ca2f80ba40f/oauth2/authorize", false);
+    AuthenticationResult userProfileAuthenticationResult = await userProfileAuthenticationContext.AcquireTokenAsync("https://boraakkaya.sharepoint.com",clientCred);
+    string userProfileToken2 = userProfileAuthenticationResult.AccessToken;
+    log.Info("User Profile Token 2: "+userProfileToken2);
+
+    string userProfileToken  = await GetAuthTokenForSharePoint(log);
+    log.Info("User Profile Token : "+userProfileToken);
+    var digest = await GetDigestForSharePoint("https://boraakkaya.sharepoint.com", userProfileToken);
+    
+    log.Info("Digest  : "+ digest);
+    //var userProfileResponse = await postToUserProfile(userProfileToken,userAccountEmail,propertyValue,log);
+    var userProfileResponse = await postToUserProfile2(digest,userProfileToken,userAccountEmail,propertyValue,log);
+    var userProfileResponseResult =  await userProfileResponse.Content.ReadAsStringAsync();
+    log.Info("User Profile Response Result : "+userProfileResponseResult);
+    log.Info("User Profile Response Status Code  : "+ userProfileResponse.StatusCode.ToString());
+
+    HttpResponseMessage response = new HttpResponseMessage();        
+    response.Content =  new StringContent(graphResponseResult, Encoding.UTF8, "application/json");
+    response.Content.Headers.Add("Access-Control-Allow-Credentials", "true");
+    response.Content.Headers.Add("Access-Control-Allow-Origin", "https://boraakkaya.sharepoint.com");
+    response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+    return response;
+}
+public static async Task<HttpResponseMessage> postToGraph(string graphToken, string userAccountEmail, string propertyValue, TraceWriter log)
+{
+    HttpClient client = new HttpClient();    
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", graphToken);
+    //string resource = "https://graph.microsoft.com/v1.0/users/";
+    string resource = "https://graph.microsoft.com/beta/users/" + userAccountEmail +"";
+    var requestUrl = resource ;
+    var requestMethod = new HttpMethod("PATCH");
+    //var requestMethod = new HttpMethod("GET");
+    var request = new HttpRequestMessage(requestMethod, requestUrl)
+    {
+     Content =  new StringContent("{ \"extension_2dcfd4b97df04d62bfd57064d7db80c5_myCustomProperty1\": \""+ propertyValue +"\" }", Encoding.UTF8, "application/json")
+    }; 
+    HttpResponseMessage hrm = await client.SendAsync(request);
+    var reqResponseResult = await hrm.Content.ReadAsStringAsync();
+    log.Info("In Async : " + reqResponseResult);
+    return hrm;
+}
+
+public static async Task<HttpResponseMessage> postToUserProfile2(string digest,string userProfileToken, string userAccountEmail, string propertyValue, TraceWriter log)
+{
+
+        //var token = await GetAuthTokenForSharePoint();
+        //var digest = await GetDigestForSharePoint(siteUrl, token);
+ 
+        HttpClient client = new HttpClient();
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + userProfileToken);
+        client.DefaultRequestHeaders.Add("accept", "application/json;odata=verbose");
+        client.DefaultRequestHeaders.Add("X-RequestDigest", digest);
+        client.DefaultRequestHeaders.Add("X-HTTP-Method", "GET");
+ 
+        HttpContent content = new StringContent("{\"accountName\": \"i:0#.f|membership|"+ userAccountEmail +"\",\"propertyName\":\"MyCustomProperty1\",\"propertyValue\":\""+ propertyValue + "\"}");
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        content.Headers.ContentType.Parameters.Add(new NameValueHeaderValue("odata", "verbose")); 
+        string spTenantUrl = System.Configuration.ConfigurationManager.AppSettings["SP_TENANT_URL"]; 
+        HttpResponseMessage response = await client.PostAsync("https://boraakkaya-admin.sharepoint.com/_api/SP.UserProfiles.PeopleManager/SetSingleValueProfileProperty", content);
+        //HttpResponseMessage response = await client.GetAsync("https://boraakkaya.sharepoint.com/_api/sp.userprofiles.peoplemanager/getuserprofilepropertyfor(accountName='i%3A0%23.f%7Cmembership%7Cboraakkaya%40boraakkaya.onmicrosoft.com',propertyname='PictureURL')");
+        return response;
+}
+
+public static async Task<HttpResponseMessage> postToUserProfile(string userProfileToken, string userAccountEmail, string propertyValue, TraceWriter log)
+{
+    HttpClient client = new HttpClient();    
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", userProfileToken);    
+    string requestUrl = "https://boraakkaya.sharepoint.com/_api/SP.UserProfiles.PeopleManager/SetSingleValueProfileProperty";    
+    var requestMethod = new HttpMethod("POST");    
+    var request = new HttpRequestMessage(requestMethod, requestUrl)
+    {
+     Content =  new StringContent("{\"accountName\": \"i:0#.f|membership|"+ userAccountEmail +"\",\"propertyName\":\"MyCustomProperty1\",\"propertyValue\":\""+ propertyValue + "\"}", Encoding.UTF8, "application/json")
+    }; 
+    HttpResponseMessage hrm = await client.SendAsync(request);
+    var reqResponseResult = await hrm.Content.ReadAsStringAsync();
+    log.Info("In Async : " + reqResponseResult);
+    return hrm;
+}
+
+
+public static async Task<string> GetAuthTokenForSharePoint(TraceWriter log)
+{
+    HttpClient client = new HttpClient();
+
+    string clientId = System.Configuration.ConfigurationManager.AppSettings["SP_CLIENT_ID"];
+    string clientSecret = System.Configuration.ConfigurationManager.AppSettings["SP_CLIENT_SECRET"];
+    string tenantId = System.Configuration.ConfigurationManager.AppSettings["SP_TENANT_ID"];
+    string spTenantUrl = System.Configuration.ConfigurationManager.AppSettings["SP_TENANT_URL"];
+    string spPrinciple = "00000003-0000-0ff1-ce00-000000000000";
+    string spAuthUrl = "https://accounts.accesscontrol.windows.net/" + tenantId + "/tokens/OAuth/2";
+
+    KeyValuePair<string, string>[] body = new KeyValuePair<string, string>[]
+    {
+        new KeyValuePair<string, string>("grant_type", "client_credentials"),
+        new KeyValuePair<string, string>("client_id", $"{clientId}@{tenantId}"),
+        new KeyValuePair<string, string>("resource", $"{spPrinciple}/https://boraakkaya-admin.sharepoint.com@{tenantId}".Replace("https://", "")),
+        new KeyValuePair<string, string>("client_secret", clientSecret)
+    };
+
+    var content = new FormUrlEncodedContent(body);
+    var contentLength = content.ToString().Length;
+
+    string token = "";
+
+    using (HttpResponseMessage response = await client.PostAsync(spAuthUrl, content))
+    {
+        if (response.Content != null)
+        {
+            string responseString = await response.Content.ReadAsStringAsync();
+            log.Info("responseString  : "+ responseString);
+            JObject data = JObject.Parse(responseString);
+            log.Info("Data Object  : "+ data);
+            token = data.Value<string>("access_token");
+        }
+    }
+
+    return token;
+}
+public static async Task<string> GetDigestForSharePoint(string siteUrl, string token)
+{
+    HttpClient client = new HttpClient();
+
+    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + token);
+    client.DefaultRequestHeaders.Add("accept", "application/json;odata=verbose");
+    StringContent content = new StringContent("");
+
+    string spTenantUrl = System.Configuration.ConfigurationManager.AppSettings["SP_TENANT_URL"];
+    string digest = "";
+
+    using (HttpResponseMessage response = await client.PostAsync($"https://boraakkaya-admin.sharepoint.com/_api/contextinfo", content))
+    {        
+        if (response.IsSuccessStatusCode)
+        {
+            string contentJson = response.Content.ReadAsStringAsync().Result;
+            JObject val = JObject.Parse(contentJson);
+            JToken d = val["d"];
+            JToken wi = d["GetContextWebInformation"];
+            digest = wi.Value<string>("FormDigestValue");
+        }
+    }
+
+    return digest;
+}
