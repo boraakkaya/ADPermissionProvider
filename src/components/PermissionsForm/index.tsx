@@ -5,33 +5,33 @@ import { ITAPeoplePicker, ITAPersonaProps } from './../Common/ITAPeoplePicker'
 import { autobind } from '@uifabric/utilities';
 import { Button, PrimaryButton, DefaultButton } from 'office-ui-fabric-react/lib/Button';
 import { TextField, ITextField } from 'office-ui-fabric-react/lib/TextField';
-import { SPHttpClient, HttpClient } from '@microsoft/sp-http';
+import {SPHttpClientConfiguration, SPHttpClient, HttpClient, IHttpClientOptions } from '@microsoft/sp-http';
 import { Environment, EnvironmentType } from '@microsoft/sp-core-library';
 import {
     Spinner,
     SpinnerSize
-  } from 'office-ui-fabric-react/lib/Spinner';
+} from 'office-ui-fabric-react/lib/Spinner';
 export interface PermissionFormProps {
     spContext: IWebPartContext
 };
 export interface PermissionFormState {
     userAccountEmail: string;
     propertyValue: string;
-    isLoading:boolean;
+    isLoading: boolean;
 };
 class PermissionForm extends React.Component<PermissionFormProps, PermissionFormState> {
     azureWebsiteLoaded: boolean;
     constructor(props) {
         super(props);
-        this.state = { userAccountEmail: "johndoe@boraakkaya.onmicrosoft.com", propertyValue: "Default Value", isLoading:true }
-        this.executeOrDelayUntilAzureIFrameLoaded(()=>{
-            this.setState({isLoading:false});
+        this.state = { userAccountEmail: "johndoe@boraakkaya.onmicrosoft.com", propertyValue: "Default Value", isLoading: true }
+        this.executeOrDelayUntilAzureIFrameLoaded(() => {
+            this.setState({ isLoading: false });
         })
     }
     public render(): JSX.Element {
         return (<div>
 
-            {this.state.isLoading && <Spinner size={ SpinnerSize.large } label='Waiting for the Azure Web site to load...' ariaLive='assertive' />}
+            {this.state.isLoading && <Spinner size={SpinnerSize.large} label='Waiting for the Azure Web site to load...' ariaLive='assertive' />}
             {JSON.stringify(this.state)}
             <h2>ITA Active Directory Permissions</h2>
             <p>Disclaimer : Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis suscipit volutpat laoreet. Nullam vulputate nisl eget aliquet sodales. In nec leo libero. Sed hendrerit est felis, vel laoreet metus gravida sit amet. Fusce neque ligula, mattis vitae elit sollicitudin, malesuada laoreet metus. Phasellus lectus nunc, tincidunt sit amet congue eu, feugiat ac lorem. Proin elit urna, tristique vitae fermentum quis, elementum ac erat.</p>
@@ -42,10 +42,13 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
             Permission Sets : <br />
             <TextField onChanged={(e) => { console.log(e); this.setState({ propertyValue: e }); }} placeholder="Custom Active Directory Permission Value" />
             <br />
-            <DefaultButton style={{backgroundColor:'ms-bgColor-themePrimary'}}  primary={true} disabled={this.state.isLoading} text="Call Graph API" onClick={() => { this.callFunctionAPI() }} />
+            <DefaultButton style={{ backgroundColor: 'ms-bgColor-themePrimary' }} primary={true} disabled={this.state.isLoading} text="Call Graph API" onClick={() => { this.callFunctionAPI() }} />
             <br />
+            <br/>
+            <DefaultButton style={{ backgroundColor: 'ms-bgColor-themePrimary' }} primary={true} disabled={this.state.isLoading} text="Update User Profile Property" onClick={() => { this.updateUPP() }} />
+            <br/>
             <br />
-            <iframe style={{display:'none'}} src="https://functionappitaadp.azurewebsites.net" onLoad={()=>{this.azureWebsiteLoaded = true}} ></iframe>
+            <iframe style={{ display: 'block' }} src="https://boratestfunction1.azurewebsites.net" onLoad={() => { this.azureWebsiteLoaded = true }} ></iframe>
             <br />
             <br />
         </div>);
@@ -68,22 +71,36 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
             setTimeout((): void => { this.executeOrDelayUntilAzureIFrameLoaded(func); }, 100);
         }
     }
+    @autobind
+    private async updateUPP()
+    {
+        var contentBody = `{"accountName":"i:0#.f|membership|${this.state.userAccountEmail}","propertyName":"MyCustomProperty1","propertyValue":"${this.state.propertyValue}"}`
+        this.props.spContext.spHttpClient.post('https://boraakkaya-admin.sharepoint.com/_api/SP.UserProfiles.PeopleManager/SetSingleValueProfileProperty',SPHttpClient.configurations.v1,{body:contentBody}).then(async(result)=>{
+            console.log("UPP Result ", result);
+            await result.json().then((data)=>{
+                console.log(data);
+            })
+        },(err)=>{
+            console.log("Error occured : ", err);
+        })
+    }
     private async callFunctionAppITAADP() {
-        this.props.spContext.httpClient.fetch(`https://functionappitaadp.azurewebsites.net/api/UpdateAAD?userAccountEmail=${this.state.userAccountEmail}&propertyValue=${this.state.propertyValue}`, HttpClient.configurations.v1, {
+        this.props.spContext.httpClient.fetch(`https://boratestfunction1.azurewebsites.net/api/HttpTriggerCSharp1?userAccountEmail=${this.state.userAccountEmail}&propertyValue=${this.state.propertyValue}`, HttpClient.configurations.v1, {
             credentials: "include",
             mode: 'cors'
         }).then(async (result) => {
             console.log("Result ", result);
-            await result.json().then((data) => {
-                console.log("DSadsad ", data);
-                return "Some DATA";
-            });
-        },
+            //console.log("Text is ",result.text());
+            await result.json().then((data: any) => {
+                console.log("ResultObject ", data);
+            }
+            );
+        }),
             (error) => {
                 return error;
             }
-        );
     }
+
     @autobind
     private handleITAPickerChange(val) {
         console.log(val);
