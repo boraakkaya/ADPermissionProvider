@@ -14,7 +14,7 @@ log.Info("C# HTTP trigger function processed a request.");
     string propertyValue = req.GetQueryNameValuePairs().FirstOrDefault(q => string.Compare(q.Key,"propertyValue",true)==0).Value;    
     log.Info("User  : " + userAccountEmail + " Value : " + propertyValue);    
     var graphAuthenticationContext = new AuthenticationContext("https://login.microsoftonline.com/cd1ed347-7cfb-48c9-981a-8ca2f80ba40f/oauth2/authorize", false); 
-    ClientCredential clientCred = new ClientCredential("056a3ae6-3502-4c59-a624-e05e94a2ead7", "kbbL2f72SKpbo6kfBfO+y8VaxhKWBaIJ2Dia9U3YCWw=");
+    ClientCredential clientCred = new ClientCredential("<clientID>", "<ClientSecret>");
     AuthenticationResult graphAuthenticationResult = await graphAuthenticationContext.AcquireTokenAsync("https://graph.microsoft.com",clientCred);
     string graphToken = graphAuthenticationResult.AccessToken;
     log.Info("Graph Token : " + graphToken);
