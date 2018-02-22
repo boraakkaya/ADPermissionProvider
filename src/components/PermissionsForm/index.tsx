@@ -19,6 +19,15 @@ export interface PermissionFormState {
     propertyValue: string;
     isLoading: boolean;
 };
+export enum promiseResultEnum{
+    Success = "success",
+    Error = "error"
+}
+export interface IAPIPromiseResult
+{
+    graphResult:string,
+    userProfileResult:promiseResultEnum
+}
 class PermissionForm extends React.Component<PermissionFormProps, PermissionFormState> {
     azureWebsiteLoaded: boolean;
     constructor(props) {
@@ -40,13 +49,15 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
             <ITAPeoplePicker spContext={this.props.spContext} onChange={(a) => { this.handleITAPickerChange(a); }} itemLimit={1} />
             <br />
             Permission Sets : <br />
-            <TextField onChanged={(e) => { console.log(e); this.setState({ propertyValue: e }); }} placeholder="Custom Active Directory Permission Value" />
+            <TextField onChanged={(e) => { this.setState({ propertyValue: e }); }} placeholder="Custom Active Directory Permission Value" />
             <br />
-            <DefaultButton style={{ backgroundColor: 'ms-bgColor-themePrimary' }} primary={true} disabled={this.state.isLoading} text="Call Graph API" onClick={() => { this.callFunctionAPI() }} />
+            <DefaultButton style={{ backgroundColor: '#800000' }} primary={true} disabled={this.state.isLoading} text="Update User Permissions" onClick={() => { this.callFunctionAPI() }} />
             <br />
+            {/*
             <br/>
             <DefaultButton style={{ backgroundColor: 'ms-bgColor-themePrimary' }} primary={true} disabled={this.state.isLoading} text="Update User Profile Property" onClick={() => { this.updateUPP() }} />
-            <br/>
+            <br/> 
+            */}
             <br />
             <iframe style={{ display: 'block' }} src="https://boratestfunction1.azurewebsites.net" onLoad={() => { this.azureWebsiteLoaded = true }} ></iframe>
             <br />
@@ -56,8 +67,16 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
     @autobind
     private callFunctionAPI() {
         if (Environment.type == EnvironmentType.SharePoint) {
-            this.callFunctionAppITAADP().then((a) => {
-                console.log("A : ", a);
+            this.callFunctionAppITAADP().then((promiseResult:IAPIPromiseResult) => {
+                console.log("promiseResult : ", promiseResult);
+                if(promiseResult.graphResult == promiseResultEnum.Success && promiseResult.userProfileResult == promiseResultEnum.Success)
+                {
+                    alert("Updated both AD and UPS custom property successfully!");
+                }
+                else
+                {
+                    alert("An error occured while updating permission sets for this employee! Please check error logs..");
+                }
             })
         }
         else {
@@ -84,26 +103,28 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
             console.log("Error occured : ", err);
         })
     }
-    private async callFunctionAppITAADP() {
-        this.props.spContext.httpClient.fetch(`https://boratestfunction1.azurewebsites.net/api/HttpTriggerCSharp1?userAccountEmail=${this.state.userAccountEmail}&propertyValue=${this.state.propertyValue}`, HttpClient.configurations.v1, {
+    private async callFunctionAppITAADP():Promise<{}> {
+        var resultObject = {};
+        await this.props.spContext.httpClient.fetch(`https://boratestfunction1.azurewebsites.net/api/HttpTriggerCSharp1?userAccountEmail=${this.state.userAccountEmail}&propertyValue=${this.state.propertyValue}`, HttpClient.configurations.v1, {
             credentials: "include",
             mode: 'cors'
         }).then(async (result) => {
             console.log("Result ", result);
-            //console.log("Text is ",result.text());
             await result.json().then((data: any) => {
                 console.log("ResultObject ", data);
+                resultObject =  data;
             }
             );
         }),
-            (error) => {
-                return error;
+            (error) => 
+            {
+                resultObject =  error;
             }
+            return resultObject
     }
 
     @autobind
-    private handleITAPickerChange(val) {
-        console.log(val);
+    private handleITAPickerChange(val) {        
         this.setState({ userAccountEmail: val.length > 0 ? val[0].secondaryText : "" });
     }
 }
@@ -113,4 +134,3 @@ const mapStateToProps = (state) => {
 };
 
 export default connect(mapStateToProps)(PermissionForm);
-
