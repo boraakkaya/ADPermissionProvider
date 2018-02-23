@@ -37,7 +37,7 @@ export default class AdPermissionProviderWebPart extends BaseClientSideWebPart<I
   protected onInit(): Promise<void> {
     console.log("CurrentStore : " , store.getState());
     store.dispatch(getCurrentContext(this.context)).then((data)=>{
-      console.log("Data : " , data);
+      console.log("Datax : " , data);
       console.log("ContextState : " , store.getState());
       (window as any).loggedInUser = this.context.pageContext.user;
     });

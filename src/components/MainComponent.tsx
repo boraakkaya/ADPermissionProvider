@@ -2,6 +2,7 @@ import * as React from 'react';
 import { IWebPartContext, WebPartContext } from "@microsoft/sp-webpart-base";
 import { autobind } from "office-ui-fabric-react/lib/Utilities";
 import PermissionsForm from './PermissionsForm';
+import styles from './../webparts/adPermissionProvider/AdPermissionProviderWebPart.module.scss'
 export interface MainComponentProps {
     context:IWebPartContext | WebPartContext;
 }
@@ -10,7 +11,7 @@ class MainComponent extends React.Component<MainComponentProps, MainComponentSta
     
     public render(): JSX.Element {
             
-        return (<div>
+        return (<div className={styles.adPermissionProvider}>
                 <PermissionsForm />                     
             </div>);
     }    
