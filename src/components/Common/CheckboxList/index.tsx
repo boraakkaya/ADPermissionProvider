@@ -37,7 +37,7 @@ export default class CheckBoxListUC extends React.Component<CheckBoxListUCProps,
                         key={i}
                         label={v.value}
                         value={v.key}
-                        defaultChecked={isChecked}
+                        //defaultChecked={isChecked}
                         checked={isChecked}
                         onChange={(event, isChecked) => this.updateSelections(isChecked, v)}
                     /></div>

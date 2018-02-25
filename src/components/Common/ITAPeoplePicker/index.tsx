@@ -43,14 +43,14 @@ const suggestionProps: IBasePickerSuggestionsProps = {
 };
 //extended Persona to hold userID
 export interface ITAPersonaProps extends IPersonaWithMenu {
-    userID: number,
+    userID: number
 }
 export interface ITAPeoplePickerProps {
     /**
      * Number of items alllowed in this picker
      */
-    itemLimit?: number,
-    spContext: IWebPartContext | WebPartContext,
+    itemLimit?: number;
+    spContext: IWebPartContext | WebPartContext;
     /**
      * Callback when Compact Picker items change.
      * Returns selected items as first parameter as IPersonaProps array.

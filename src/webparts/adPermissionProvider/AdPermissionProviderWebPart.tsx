@@ -26,8 +26,7 @@ export default class AdPermissionProviderWebPart extends BaseClientSideWebPart<I
  
   public render(): void {
     const element = <Provider store={store}>
-    <div>
-      <h2 className="ms-font-xxl">ITA - Azure AD Permission Provider</h2>
+    <div>      
       <MainComponent context={this.context} />
     </div>
   </Provider>;
