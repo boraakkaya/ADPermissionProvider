@@ -49,7 +49,7 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
         if (this.state.isLoading) {
             return (<div>
                 <Spinner size={SpinnerSize.large} label='Loading page components...' ariaLive='assertive' />
-                <iframe style={{ display: 'none' }} src="https://boratestfunction1.azurewebsites.net" onLoad={(e) => {
+                <iframe style={{ display: 'none' }} src="https://usercustomproperty.azurewebsites.net" onLoad={(e) => {
                     this.azureWebsiteLoaded = true
                 }} ></iframe>
             </div>)
@@ -84,10 +84,10 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
                 <DefaultButton className={styles.submitbutton} primary={true} disabled={this.state.isLoading || this.state.userAccountEmail.length == 0} text="Update User Permissions" onClick={() => { this.callFunctionAPI() }} />
                 <br />
                 <br />
-                <iframe style={{ display: 'none' }} src="https://boratestfunction1.azurewebsites.net" onLoad={(e) => {
+                <iframe style={{ display: 'none' }} src="https://usercustomproperty.azurewebsites.net" onLoad={(e) => {
                     this.azureWebsiteLoaded = true
                 }} ></iframe>
-                <iframe style={{ display: 'none' }} src="https://boratestfunction1.azurewebsites.net/.auth/login/aad/callback" ref={(e) => { this.authIframe = e }} ></iframe>
+                <iframe style={{ display: 'none' }} src="https://usercustomproperty.azurewebsites.net/.auth/login/aad/callback" ref={(e) => { this.authIframe = e }} ></iframe>
                 <br />
                 <br />
             </div>);
@@ -98,7 +98,7 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
         if (this.authIframe != null) {
             setInterval(() => {
                 console.log("Updating Source");
-                this.authIframe.src = "https://boratestfunction1.azurewebsites.net/.auth/login/aad/callback";
+                this.authIframe.src = "https://usercustomproperty.azurewebsites.net/.auth/login/aad/callback";
             }, 300000);
         }
         else {
@@ -153,7 +153,7 @@ class PermissionForm extends React.Component<PermissionFormProps, PermissionForm
             userAccountEmail: this.state.userAccountEmail,
             propertyValue: customPropertyValue
         }
-        await this.props.spContext.httpClient.fetch(`https://boratestfunction1.azurewebsites.net/api/HttpTriggerCSharp1?userAccountEmail=${this.state.userAccountEmail}&propertyValue=${customPropertyValue}`, HttpClient.configurations.v1, {
+        await this.props.spContext.httpClient.fetch(`https://usercustomproperty.azurewebsites.net/api/UpdateProperty?userAccountEmail=${this.state.userAccountEmail}&propertyValue=${customPropertyValue}`, HttpClient.configurations.v1, {
             credentials: "include",
             mode: 'cors'
         }).then(async (result) => {
